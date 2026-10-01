@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">赛事控制台</string>
+    <string name="mode_title">双机赛事监看与记分控制台</string>
+    <string name="mode_sender">发送端</string>
+    <string name="mode_sender_desc">采集本机屏幕并推流，同时本地录屏</string>
+    <string name="mode_receiver">接收端</string>
+    <string name="mode_receiver_desc">接收比赛画面并显示赛事控制台</string>
+
+    <string name="notif_channel_capture">屏幕采集</string>
+    <string name="notif_channel_capture_desc">屏幕推流与录屏期间常驻通知</string>
+    <string name="notif_capture_title">正在推流比赛画面</string>
+    <string name="notif_capture_text">保持前台运行可避免被系统回收</string>
+</resources>

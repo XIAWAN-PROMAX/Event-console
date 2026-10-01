@@ -1,34 +1,49 @@
-# Gradle files
+# ---------------------------------------------------------------------------
+# IDE / 编辑器
+# ---------------------------------------------------------------------------
+.idea/
+*.iml
+.vscode/
+.DS_Store
+*.hprof
+
+# ---------------------------------------------------------------------------
+# Gradle
+# ---------------------------------------------------------------------------
 .gradle/
 build/
+.kotlin/
 
-# Local configuration file (sdk path, etc)
+# ---------------------------------------------------------------------------
+# 本机配置与签名密钥（绝对不能提交）
+# ---------------------------------------------------------------------------
 local.properties
-
-# Log/OS Files
-*.log
-
-# Android Studio generated files and folders
-captures/
-.externalNativeBuild/
-.cxx/
-*.aab
-*.apk
-output-metadata.json
-
-# IntelliJ
-*.iml
-.idea/
-misc.xml
-deploymentTargetDropDown.xml
-render.experimental.xml
-
-# Keystore files
+keystore.properties
 *.jks
 *.keystore
 
-# Google Services (e.g. APIs or Firebase)
-google-services.json
+# ---------------------------------------------------------------------------
+# Android 打包产物
+# ---------------------------------------------------------------------------
+*.apk
+*.aab
+*.ap_
+*.dex
+output.json
+captures/
 
-# Android Profiling
-*.hprof
+# ---------------------------------------------------------------------------
+# 原生构建中间产物
+# ---------------------------------------------------------------------------
+.externalNativeBuild/
+.cxx/
+
+# ---------------------------------------------------------------------------
+# 日志与临时文件
+# ---------------------------------------------------------------------------
+*.log
+.uploads/
+
+# 注意：以下文件必须提交，不要加进本文件
+#   gradle/wrapper/gradle-wrapper.jar
+#   gradle/wrapper/gradle-wrapper.properties

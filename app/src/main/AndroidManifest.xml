@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- ===== 网络：局域网 P2P 信令 + WebRTC 媒体 ===== -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+    <uses-permission android:name="android.permission.CHANGE_WIFI_MULTICAST_STATE" />
+
+    <!-- ===== 前台服务（Android 14 必须显式声明 type） ===== -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+
+    <!-- ===== 通知（Android 13+ 运行时） ===== -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <!-- ===== 扫码连接 ===== -->
+    <uses-permission android:name="android.permission.CAMERA" />
+
+    <!-- ===== 长时运行稳定性 ===== -->
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+
+    <uses-feature
+        android:name="android.hardware.camera.any"
+        android:required="false" />
+
+    <application
+        android:name=".MatchConsoleApp"
+        android:allowBackup="true"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.MatchConsole"
+        tools:targetApi="34">
+
+        <activity
+            android:name=".MainActivity"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden|uiMode|density"
+            android:exported="true"
+            android:launchMode="singleTask"
+            android:screenOrientation="sensorLandscape"
+            android:theme="@style/Theme.MatchConsole"
+            tools:ignore="DiscouragedApi,LockedOrientationActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!--
+         发送端屏幕采集前台服务。
+         Android 14+ 要求：必须先启动 mediaProjection 类型的前台服务，
+         之后才允许调用 MediaProjectionManager.getMediaProjection()。
+        -->
+        <service
+            android:name=".sender.ScreenCaptureService"
+            android:exported="false"
+            android:foregroundServiceType="mediaProjection|dataSync" />
+
+    </application>
+
+</manifest>
