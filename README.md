@@ -141,6 +141,30 @@ echo "sdk.dir=$ANDROID_HOME" > local.properties
 
 > 本仓库已验证：`assembleDebug` 成功产出 `app-debug.apk`（debug 包含 WebRTC 原生库与 MLKit，体积约 120MB+，属正常）。
 
+### 3.4 发布包签名
+
+`assembleRelease` 读取仓库根目录的 `keystore.properties`，存在时才产出**已签名**的 APK：
+
+```bash
+./gradlew :app:assembleRelease
+# 产物：app/build/outputs/apk/release/app-release.apk
+```
+
+`keystore.properties` 格式（**该文件与 `.jks` 均已被 `.gitignore` 忽略，不进仓库**）：
+
+```properties
+storeFile=matchconsole-release.jks
+storePassword=<你的密码>
+keyAlias=matchconsole
+keyPassword=<你的密码>
+```
+
+`storeFile` 相对仓库根目录解析。文件不存在时构建不会中断，但产物为**未签名** APK，无法直接安装。
+
+> keystore 与密码请单独备份（密码管理器 / 离线介质）。**一旦丢失，就无法再对同一 `applicationId` 发布更新**，只能更换包名重发。
+
+> debug 包与 release 包使用**不同签名**，无法互相覆盖安装。若设备上已装过 debug 包，需先卸载。
+
 ---
 
 ## 4. 安装
