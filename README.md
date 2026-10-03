@@ -10,7 +10,7 @@
 ![语言](https://img.shields.io/badge/Kotlin-2.0-7F52FF?logo=kotlin&logoColor=white)
 ![传输](https://img.shields.io/badge/WebRTC-P2P-333333?logo=webrtc&logoColor=white)
 ![许可](https://img.shields.io/badge/License-GPLv3-blue.svg)
-![版本](https://img.shields.io/badge/release-v1.0-success)
+![版本](https://img.shields.io/badge/release-v1.1-success)
 
 </div>
 
