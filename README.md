@@ -50,6 +50,12 @@ MatchConsole 是一套面向线下小型赛事的**双机监看与记分方案**
 
 ## 功能演示
 
+### 项目速览（30 秒 · 纯黑白极简版）
+
+[▶ 点此观看项目介绍视频（MP4）](https://github.com/XIAWAN-PROMAX/Event-console/releases/download/v1.1/matchconsole-intro-mono.mp4)
+
+> 纯黑底白字的极简动态图形，节奏卡点呈现：两台手机 → 一套赛事导播台，涵盖扫码直连、实时记分、沉浸预览与本地录制全流程。
+
 ### 1. 三步连起来（模式选择 → 扫码配对 → 收到画面）
 
 ![连接流程演示](docs/images/demo-flow.gif)
