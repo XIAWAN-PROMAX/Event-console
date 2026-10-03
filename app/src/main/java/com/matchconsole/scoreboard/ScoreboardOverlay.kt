@@ -2,14 +2,17 @@ package com.matchconsole.scoreboard
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -108,6 +111,125 @@ fun ScoreboardOverlay(
                 nameSize = nameSize,
                 subSize = subSize,
                 modifier = Modifier.weight(1f)
+            )
+        }
+    }
+}
+
+/**
+ * 视频**下方**那条独立记分牌。
+ *
+ * 与 [ScoreboardOverlay] 的区别：本组件是画面之外的一条实底横条，
+ * 所以不做半透明、不占画面任何像素 —— 推流画面因此完全不被遮挡。
+ * 高度固定，只做「显示」，所有操作仍在右侧控制区。
+ */
+@Composable
+fun ScoreboardBand(
+    scores: ScoreUi,
+    clock: ClockUi,
+    modifier: Modifier = Modifier
+) {
+    val scheme = MaterialTheme.colorScheme
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(BandHeight)
+            .background(scheme.surfaceVariant)
+            .padding(horizontal = 14.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        BandTeam(
+            team = scores.home,
+            accent = OverlayPalette.HomeAccent,
+            alignEnd = false,
+            modifier = Modifier.weight(1f)
+        )
+
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.padding(horizontal = 16.dp)
+        ) {
+            Text(
+                text = scores.periodTitle,
+                color = scheme.onSurfaceVariant,
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Medium,
+                maxLines = 1
+            )
+            Text(
+                text = formatMainClock(clock.mainClockMs),
+                color = if (clock.mainRunning) OverlayPalette.LedRed else scheme.onSurface,
+                fontSize = 30.sp,
+                fontWeight = FontWeight.Black,
+                maxLines = 1
+            )
+            if (clock.shotEnabled) {
+                Text(
+                    text = "进攻时限 ${formatShotClock(clock.shotClockMs)}",
+                    color = if (clock.shotClockMs <= 5000) OverlayPalette.LedRed else scheme.onSurfaceVariant,
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 1
+                )
+            }
+        }
+
+        BandTeam(
+            team = scores.away,
+            accent = OverlayPalette.AwayAccent,
+            alignEnd = true,
+            modifier = Modifier.weight(1f)
+        )
+    }
+}
+
+private val BandHeight = 72.dp
+
+@Composable
+private fun BandTeam(
+    team: TeamState,
+    accent: Color,
+    alignEnd: Boolean,
+    modifier: Modifier = Modifier
+) {
+    val scheme = MaterialTheme.colorScheme
+    val horizontal = if (alignEnd) Alignment.End else Alignment.Start
+    Row(
+        modifier = modifier,
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = if (alignEnd) Arrangement.End else Arrangement.Start
+    ) {
+        Box(
+            modifier = Modifier
+                .width(4.dp)
+                .height(34.dp)
+                .clip(RoundedCornerShape(2.dp))
+                .background(accent)
+        )
+        Column(
+            horizontalAlignment = horizontal,
+            modifier = Modifier.padding(horizontal = 10.dp)
+        ) {
+            Text(
+                text = team.name,
+                color = accent,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Bold,
+                maxLines = 1
+            )
+            Text(
+                text = team.score.toString(),
+                color = scheme.onSurface,
+                fontSize = 30.sp,
+                fontWeight = FontWeight.Black,
+                maxLines = 1
+            )
+            Text(
+                text = "犯规 ${team.fouls}  暂停 ${team.timeouts}",
+                color = scheme.onSurfaceVariant,
+                fontSize = 10.sp,
+                maxLines = 1,
+                textAlign = if (alignEnd) TextAlign.End else TextAlign.Start
             )
         }
     }

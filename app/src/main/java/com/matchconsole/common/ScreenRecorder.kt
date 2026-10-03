@@ -61,10 +61,11 @@ class ScreenRecorder(
     fun stats(): Pair<Long, Long> = encodedFrames to droppedFrames
 
     override fun onFrame(frame: VideoFrame) {
-        if (!running) {
-            frame.release()
-            return
-        }
+        // 注意：这里**不能**调用 frame.release()。
+        // org.webrtc.VideoSink#onFrame 传入的 VideoFrame 由调用方持有并自动释放，
+        // 接收方只有在需要跨回调持有引用时才 retain()。自行 release() 会造成
+        // 引用计数下溢（native 双重释放），表现为一开录就闪退 / 编码器崩溃。
+        if (!running) return
         synchronized(lock) {
             if (running) {
                 try {
@@ -74,7 +75,6 @@ class ScreenRecorder(
                 }
             }
         }
-        frame.release()
     }
 
     private fun encodeFrame(frame: VideoFrame) {
@@ -95,20 +95,37 @@ class ScreenRecorder(
 
             val ptsUs = resolvePtsUs(frame.timestampNs)
 
+            // 尽量把这一帧写进编码器输入缓冲。无论成功与否，都必须把
+            // dequeue 出来的 input index 归还给编码器；否则缓冲会被耗尽，
+            // dequeueInputBuffer 之后一直返回 -1，编码器彻底停摆（录出来是空文件）。
+            var filled = false
             val image = codec.getInputImage(inputIndex)
             if (image != null) {
-                fillImage(image, i420)
+                try {
+                    fillImage(image, i420)
+                    filled = true
+                } catch (t: Throwable) {
+                    Logx.w("填充编码器 Image 失败: ${t.message}")
+                }
             } else {
                 val inputBuffer = codec.getInputBuffer(inputIndex)
-                if (inputBuffer == null) {
-                    droppedFrames++
-                    return
+                if (inputBuffer != null) {
+                    try {
+                        fillNv12Fallback(inputBuffer, i420)
+                        filled = true
+                    } catch (t: Throwable) {
+                        Logx.w("填充编码器 Buffer 失败: ${t.message}")
+                    }
                 }
-                fillNv12Fallback(inputBuffer, i420)
             }
 
-            codec.queueInputBuffer(inputIndex, 0, width * height * 3 / 2, ptsUs, 0)
-            encodedFrames++
+            if (filled) {
+                codec.queueInputBuffer(inputIndex, 0, width * height * 3 / 2, ptsUs, 0)
+                encodedFrames++
+            } else {
+                codec.queueInputBuffer(inputIndex, 0, 0, ptsUs, 0)
+                droppedFrames++
+            }
             drainEncoder(drainAll = false)
         } finally {
             if (i420 !== buffer) {
@@ -311,6 +328,9 @@ class ScreenRecorder(
         val dst = plane.buffer
         val dstRowStride = plane.rowStride
         val dstPixelStride = plane.pixelStride
+        // 半平面(NV12/NV21)格式下，V 平面的起始位置会比 U 平面偏移 1 字节。
+        // 必须以平面缓冲的起始位置为基准写入，否则 U/V 会互相覆盖、画面发花。
+        val base = dst.position()
 
         val srcRow = ByteArray(sourceStride)
         val dstRow = ByteArray(dstRowStride)
@@ -335,8 +355,12 @@ class ScreenRecorder(
                 }
             }
 
-            dst.position(row * dstRowStride)
-            dst.put(dstRow, 0, dstRowStride)
+            val writePos = base + row * dstRowStride
+            if (writePos >= dst.capacity()) break
+            dst.position(writePos)
+            val writable = minOf(dstRowStride, dst.remaining())
+            if (writable <= 0) break
+            dst.put(dstRow, 0, writable)
         }
     }
 

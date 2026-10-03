@@ -35,7 +35,6 @@ import com.matchconsole.scoreboard.ClockFlags
 import com.matchconsole.scoreboard.ClockUi
 import com.matchconsole.scoreboard.LayoutUi
 import com.matchconsole.scoreboard.LinkStatsOverlay
-import com.matchconsole.scoreboard.OverlayPosition
 import com.matchconsole.scoreboard.ScoreUi
 import com.matchconsole.scoreboard.ScoreboardOverlay
 import com.matchconsole.scoreboard.ScoreboardViewModel
@@ -64,6 +63,7 @@ fun VideoPane(
     onToggleImmersive: () -> Unit,
     onToggleStats: () -> Unit,
     onTogglePure: () -> Unit,
+    onToggleQuickBar: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Box(
@@ -100,30 +100,22 @@ fun VideoPane(
             )
         }
 
-        // 记分牌叠加层：沉浸模式下固定在顶部，给底部快捷记分条让位
-        // 纯净画面模式下整体屏蔽
-        if (layout.overlayVisible && !layout.purePreview) {
-            val atTop = immersive || layout.overlayPosition == OverlayPosition.TOP
+        // 记分牌叠加层：**仅沉浸模式**才叠在画面上。
+        // 常规模式下记分牌是画面下方那条独立横条（见 ScoreboardBand），
+        // 不占用画面任何像素、也不会遮住推流内容。
+        if (immersive && layout.overlayVisible && !layout.purePreview) {
             ScoreboardOverlayHost(
                 viewModel = viewModel,
-                modifier = Modifier.align(
-                    if (atTop) Alignment.TopCenter else Alignment.BottomCenter
-                )
+                modifier = Modifier.align(Alignment.TopCenter)
             )
         }
 
-        // 链路指标：与记分牌相反的一侧，避免互相遮挡
+        // 链路指标：常规模式下记分牌在画面外，所以固定放左上角即可
         if (layout.statsVisible && !layout.purePreview) {
             OverlayStatsHost(
                 receiver = receiver,
                 modifier = Modifier
-                    .align(
-                        if (!immersive && layout.overlayPosition == OverlayPosition.TOP) {
-                            Alignment.BottomStart
-                        } else {
-                            Alignment.TopStart
-                        }
-                    )
+                    .align(Alignment.TopStart)
                     .padding(10.dp)
             )
         }
@@ -157,6 +149,13 @@ fun VideoPane(
                     onClick = onToggleStats
                 )
                 GlassChip(label = "纯净画面", onClick = onTogglePure)
+                if (immersive) {
+                    // 沉浸模式下把记分条也收起来，画面就彻底干净了
+                    GlassChip(
+                        label = if (layout.quickBarVisible) "记分条开" else "记分条关",
+                        onClick = onToggleQuickBar
+                    )
+                }
                 GlassChip(
                     label = if (immersive) "退出沉浸" else "沉浸预览",
                     onClick = onToggleImmersive

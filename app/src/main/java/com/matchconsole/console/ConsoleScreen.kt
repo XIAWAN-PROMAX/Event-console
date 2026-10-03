@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
@@ -21,6 +22,9 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.matchconsole.receiver.ReceiverSession
 import com.matchconsole.receiver.ReceiverUiState
+import com.matchconsole.scoreboard.ClockUi
+import com.matchconsole.scoreboard.ScoreUi
+import com.matchconsole.scoreboard.ScoreboardBand
 import com.matchconsole.scoreboard.ScoreboardViewModel
 
 /**
@@ -31,15 +35,16 @@ import com.matchconsole.scoreboard.ScoreboardViewModel
  *  常规模式
  *  ┌──────────────────────────────┬──────────────────┐
  *  │ 区域1 主画面（WebRTC 渲染）    │ 区域2 比分控制    │
- *  │  + 记分牌叠加层               │ 区域3 计时控制    │
- *  │  + 链路指标角标               │ 区域4 状态与设置  │
+ *  │  —— 画面上不叠记分牌 ——        │ 区域3 计时控制    │
+ *  ├──────────────────────────────┤ 区域4 状态与设置  │
+ *  │ 记分牌横条（画面之外，不遮挡）  │                  │
  *  └──────────────────────────────┴──────────────────┘
  *
  *  沉浸模式（[immersive]）
  *  ┌──────────────────────────────────────────────────┐
  *  │ 区域1 主画面铺满整屏                              │
- *  │  + 记分牌叠加层（置顶）                           │
- *  │  + 底部半透明快捷记分条                           │
+ *  │  + 记分牌叠加层（置顶，可关）                     │
+ *  │  + 底部半透明快捷记分条（可关）                   │
  *  └──────────────────────────────────────────────────┘
  *
  * 性能说明（重要）：本层只订阅低频的 [ScoreboardViewModel.layout] / [scores]，
@@ -76,12 +81,13 @@ fun ConsoleScreen(
                         onToggleImmersive = { onImmersiveChange(false) },
                         onToggleStats = scoreboardViewModel::toggleStats,
                         onTogglePure = scoreboardViewModel::togglePurePreview,
+                        onToggleQuickBar = scoreboardViewModel::toggleQuickBar,
                         modifier = Modifier.fillMaxSize()
                     )
 
                     // 底部快捷记分条：看大画面的同时仍能立刻改比分。
                     // 纯净画面模式下连它一起屏蔽，做到画面上零遮挡。
-                    if (!layout.purePreview) {
+                    if (layout.quickBarVisible && !layout.purePreview) {
                         ImmersiveQuickBar(
                             viewModel = scoreboardViewModel,
                             modifier = Modifier.align(Alignment.BottomCenter)
@@ -90,19 +96,33 @@ fun ConsoleScreen(
                 }
             } else {
                 Row(modifier = Modifier.fillMaxSize()) {
-                    // ---------- 区域 1 ----------
-                    VideoPane(
-                        receiver = receiver,
-                        layout = layout,
-                        viewModel = scoreboardViewModel,
-                        immersive = false,
-                        onToggleImmersive = { onImmersiveChange(true) },
-                        onToggleStats = scoreboardViewModel::toggleStats,
-                        onTogglePure = scoreboardViewModel::togglePurePreview,
-                        modifier = Modifier
-                            .weight(1f)
-                            .fillMaxHeight()
-                    )
+                    // ---------- 区域 1：主画面 + 画面外的记分牌横条 ----------
+                    Column(modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight()
+                    ) {
+                        VideoPane(
+                            receiver = receiver,
+                            layout = layout,
+                            viewModel = scoreboardViewModel,
+                            immersive = false,
+                            onToggleImmersive = { onImmersiveChange(true) },
+                            onToggleStats = scoreboardViewModel::toggleStats,
+                            onTogglePure = scoreboardViewModel::togglePurePreview,
+                            onToggleQuickBar = scoreboardViewModel::toggleQuickBar,
+                            modifier = Modifier
+                                .weight(1f)
+                                .fillMaxWidth()
+                        )
+
+                        // 记分牌贴在视频正下方：画面之外，一个像素都不占。
+                        if (layout.overlayVisible && !layout.purePreview) {
+                            ScoreboardBandHost(
+                                viewModel = scoreboardViewModel,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        }
+                    }
 
                     // ---------- 区域 2 / 3 / 4 ----------
                     Column(
@@ -130,9 +150,9 @@ fun ConsoleScreen(
                             receiver = receiver,
                             layout = layout,
                             onToggleOverlay = scoreboardViewModel::toggleOverlay,
-                            onOverlayPosition = scoreboardViewModel::setOverlayPosition,
                             onToggleStats = scoreboardViewModel::toggleStats,
                             onTogglePure = scoreboardViewModel::togglePurePreview,
+                            onToggleQuickBar = scoreboardViewModel::toggleQuickBar,
                             onScalingFill = scoreboardViewModel::setScalingFill,
                             onToggleTheme = scoreboardViewModel::toggleTheme,
                             onToggleRecording = { ReceiverSession.toggleRecording() },
@@ -151,8 +171,24 @@ fun ConsoleScreen(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     // 沉浸模式下底部有快捷记分条，提示条需要让位
-                    .padding(bottom = if (immersive) 104.dp else 24.dp)
+                    .padding(bottom = if (immersive && layout.quickBarVisible) 104.dp else 24.dp)
             )
         }
     }
+}
+
+/**
+ * 记分牌横条的叶子节点。
+ *
+ * 计时数据 100ms 一跳，若在 [ConsoleScreen] 顶层订阅，整棵控制台树（含 WebRTC 的
+ * AndroidView）都会跟着 10Hz 重组。所以订阅只发生在这里，影响面收敛到这一条横条。
+ */
+@Composable
+private fun ScoreboardBandHost(
+    viewModel: ScoreboardViewModel,
+    modifier: Modifier = Modifier
+) {
+    val scores: ScoreUi by viewModel.scores.collectAsStateWithLifecycle()
+    val clock: ClockUi by viewModel.clock.collectAsStateWithLifecycle()
+    ScoreboardBand(scores = scores, clock = clock, modifier = modifier)
 }

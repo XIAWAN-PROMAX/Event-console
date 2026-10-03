@@ -296,8 +296,8 @@ class ScoreboardViewModel(application: Application) : AndroidViewModel(applicati
         _state.update { it.copy(overlayVisible = !it.overlayVisible) }
     }
 
-    fun setOverlayPosition(position: OverlayPosition) {
-        _state.update { it.copy(overlayPosition = position) }
+    fun toggleQuickBar() {
+        _state.update { it.copy(quickBarVisible = !it.quickBarVisible) }
     }
 
     fun toggleStats() {

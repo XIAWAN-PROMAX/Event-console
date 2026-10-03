@@ -29,23 +29,22 @@ import androidx.compose.ui.unit.sp
 import com.matchconsole.common.QrCodeUtils
 import com.matchconsole.receiver.ReceiverUiState
 import com.matchconsole.scoreboard.LayoutUi
-import com.matchconsole.scoreboard.OverlayPosition
 import com.matchconsole.scoreboard.ThemeMode
 
 /**
  * 区域 4：状态与设置区。
  *
  * 连接状态 / 本机 IP+端口+二维码 / 画面参数 /
- * 记分牌开关与位置 / 主题切换 / 接收端本地录制 / 一键重置。
+ * 记分牌与快捷记分条开关 / 主题切换 / 接收端本地录制 / 一键重置。
  */
 @Composable
 fun StatusPane(
     receiver: ReceiverUiState,
     layout: LayoutUi,
     onToggleOverlay: () -> Unit,
-    onOverlayPosition: (OverlayPosition) -> Unit,
     onToggleStats: () -> Unit,
     onTogglePure: () -> Unit,
+    onToggleQuickBar: () -> Unit,
     onScalingFill: (Boolean) -> Unit,
     onToggleTheme: () -> Unit,
     onToggleRecording: () -> Unit,
@@ -86,16 +85,10 @@ fun StatusPane(
                 modifier = Modifier.weight(1.3f)
             )
             ToggleChip(
-                label = "顶部",
-                selected = layout.overlayVisible && layout.overlayPosition == OverlayPosition.TOP,
-                onClick = { onOverlayPosition(OverlayPosition.TOP) },
-                modifier = Modifier.weight(1f)
-            )
-            ToggleChip(
-                label = "底部",
-                selected = layout.overlayVisible && layout.overlayPosition == OverlayPosition.BOTTOM,
-                onClick = { onOverlayPosition(OverlayPosition.BOTTOM) },
-                modifier = Modifier.weight(1f)
+                label = if (layout.quickBarVisible) "快捷记分条：开" else "快捷记分条：关",
+                selected = layout.quickBarVisible,
+                onClick = onToggleQuickBar,
+                modifier = Modifier.weight(2f)
             )
         }
 

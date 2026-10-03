@@ -3,9 +3,6 @@ package com.matchconsole.scoreboard
 import org.json.JSONObject
 import java.util.Locale
 
-/** 记分牌叠加层位置。 */
-enum class OverlayPosition { TOP, BOTTOM }
-
 /** 主题模式。 */
 enum class ThemeMode { DARK, LIGHT }
 
@@ -68,8 +65,14 @@ data class ScoreboardState(
     val timeoutClockMs: Long = DEFAULT_TIMEOUT_MS,
     val timeoutClockRunning: Boolean = false,
 
+    /** 视频下方那条独立记分牌的显示开关。 */
     val overlayVisible: Boolean = true,
-    val overlayPosition: OverlayPosition = OverlayPosition.BOTTOM,
+
+    /**
+     * 沉浸预览时底部那条快捷记分条是否显示。
+     * 关掉后画面上只剩推流画面本身，零遮挡。
+     */
+    val quickBarVisible: Boolean = true,
 
     /** 主画面角落的链路指标浮层开关（画面拥挤时可关掉）。 */
     val statsVisible: Boolean = true,
@@ -109,7 +112,7 @@ data class ScoreboardState(
         put("shotClockEnabled", shotClockEnabled)
         put("timeoutClockMs", timeoutClockMs)
         put("overlayVisible", overlayVisible)
-        put("overlayPosition", overlayPosition.name)
+        put("quickBarVisible", quickBarVisible)
         put("statsVisible", statsVisible)
         put("purePreview", purePreview)
         put("scalingFill", scalingFill)
@@ -136,9 +139,7 @@ data class ScoreboardState(
                 shotClockEnabled = json.optBoolean("shotClockEnabled", true),
                 timeoutClockMs = json.optLong("timeoutClockMs", DEFAULT_TIMEOUT_MS),
                 overlayVisible = json.optBoolean("overlayVisible", true),
-                overlayPosition = runCatching {
-                    OverlayPosition.valueOf(json.optString("overlayPosition", OverlayPosition.BOTTOM.name))
-                }.getOrDefault(OverlayPosition.BOTTOM),
+                quickBarVisible = json.optBoolean("quickBarVisible", true),
                 statsVisible = json.optBoolean("statsVisible", true),
                 purePreview = json.optBoolean("purePreview", false),
                 scalingFill = json.optBoolean("scalingFill", false),
@@ -217,7 +218,7 @@ data class ClockFlags(
 /** 布局与显示配置投影（低频）。 */
 data class LayoutUi(
     val overlayVisible: Boolean = true,
-    val overlayPosition: OverlayPosition = OverlayPosition.BOTTOM,
+    val quickBarVisible: Boolean = true,
     val statsVisible: Boolean = true,
     val purePreview: Boolean = false,
     val scalingFill: Boolean = false,
@@ -245,7 +246,7 @@ fun ScoreboardState.toClockFlags(): ClockFlags = ClockFlags(
 
 fun ScoreboardState.toLayoutUi(): LayoutUi = LayoutUi(
     overlayVisible = overlayVisible,
-    overlayPosition = overlayPosition,
+    quickBarVisible = quickBarVisible,
     statsVisible = statsVisible,
     purePreview = purePreview,
     scalingFill = scalingFill,
